@@ -1,50 +1,97 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { useEffect } from "react";
+import { listen } from "@tauri-apps/api/event";
+import { useDevDashStore } from "./store/useDevDashStore";
+import { ProjectsPanel } from "./components/ProjectsPanel";
+import { PortsPanel } from "./components/PortsPanel";
+import { BuildsPanel } from "./components/BuildsPanel";
+import { SessionsPanel } from "./components/SessionsPanel";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Activity, Network, Hammer, Save } from "lucide-react";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const { setProjects, setPorts, setBuilds } = useDevDashStore();
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  useEffect(() => {
+    // Listen for backend updates
+    const unlistenProjects = listen("projects-updated", (event: any) => {
+      setProjects(event.payload);
+    });
+    const unlistenPorts = listen("ports-updated", (event: any) => {
+      setPorts(event.payload);
+    });
+    const unlistenBuilds = listen("builds-updated", (event: any) => {
+      setBuilds(event.payload);
+    });
+
+    return () => {
+      unlistenProjects.then(f => f());
+      unlistenPorts.then(f => f());
+      unlistenBuilds.then(f => f());
+    };
+  }, []);
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="h-screen w-screen bg-background text-foreground flex flex-col overflow-hidden selection:bg-primary/30">
+      <header className="h-12 border-b flex items-center justify-between px-4 drag-region">
+        <h1 className="font-bold text-lg tracking-tight drag-region">DevDash</h1>
+        <div className="flex items-center space-x-2">
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-xs text-muted-foreground">Monitoring</span>
+        </div>
+      </header>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+      <main className="flex-1 overflow-y-auto p-4">
+        <Accordion>
+          <AccordionItem value="projects">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center">
+                <Activity className="w-4 h-4 mr-2" />
+                <span>Projects</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <ProjectsPanel />
+            </AccordionContent>
+          </AccordionItem>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+          <AccordionItem value="ports">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center">
+                <Network className="w-4 h-4 mr-2" />
+                <span>Developer Ports</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <PortsPanel />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="builds">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center">
+                <Hammer className="w-4 h-4 mr-2" />
+                <span>Builds & Tasks</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <BuildsPanel />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="sessions">
+            <AccordionTrigger className="hover:no-underline">
+              <div className="flex items-center">
+                <Save className="w-4 h-4 mr-2" />
+                <span>Sessions</span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <SessionsPanel />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </main>
+    </div>
   );
 }
 
