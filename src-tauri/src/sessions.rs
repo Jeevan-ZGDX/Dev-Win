@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::PathBuf;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct SessionProject {
@@ -16,36 +18,50 @@ pub struct Session {
     pub projects: Vec<SessionProject>,
 }
 
-#[tauri::command]
-pub fn save_session(name: String) -> Result<String, String> {
-    Ok(format!("Session {} saved", name))
+fn get_sessions_dir() -> PathBuf {
+    let mut path = dirs::data_dir().unwrap_or_else(|| PathBuf::from("."));
+    path.push("DevDash");
+    path.push("sessions");
+    let _ = fs::create_dir_all(&path);
+    path
 }
 
 #[tauri::command]
-pub fn restore_session(session_name: String) -> Result<(), String> {
+pub fn save_session(name: String) -> Result<String, String> {
+    let session = Session {
+        version: 1,
+        name: name.clone(),
+        saved_at: "Now".to_string(), // In real app, use chrono
+        projects: Vec::new(),
+    };
+    
+    let mut path = get_sessions_dir();
+    path.push(format!("{}.json", name));
+    
+    if let Ok(json) = serde_json::to_string_pretty(&session) {
+        if fs::write(path, json).is_ok() {
+            return Ok(format!("Session {} saved", name));
+        }
+    }
+    Err("Failed to save session".to_string())
+}
+
+#[tauri::command]
+pub fn restore_session(_session_name: String) -> Result<(), String> {
     Ok(())
 }
 
-#[cfg(not(target_os = "windows"))]
 pub fn get_sessions() -> Vec<Session> {
-    vec![
-        Session {
-            version: 1,
-            name: "Morning Dev".to_string(),
-            saved_at: "2026-04-16T08:00:00Z".to_string(),
-            projects: vec![
-                SessionProject {
-                    name: "devdash".to_string(),
-                    root: "/path/to/devdash".to_string(),
-                    start_commands: vec!["npm run tauri dev".to_string()],
-                    terminal_cwd: "/path/to/devdash".to_string(),
+    let mut sessions = Vec::new();
+    let dir = get_sessions_dir();
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            if let Ok(content) = fs::read_to_string(entry.path()) {
+                if let Ok(session) = serde_json::from_str::<Session>(&content) {
+                    sessions.push(session);
                 }
-            ],
+            }
         }
-    ]
-}
-
-#[cfg(target_os = "windows")]
-pub fn get_sessions() -> Vec<Session> {
-    vec![]
+    }
+    sessions
 }

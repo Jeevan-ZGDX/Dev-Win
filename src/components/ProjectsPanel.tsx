@@ -1,15 +1,13 @@
 import { useDevDashStore } from "@/store/useDevDashStore";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Activity, Cpu, HardDrive } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 export function ProjectsPanel() {
   const { projects } = useDevDashStore();
 
   if (projects.length === 0) {
     return (
-      <div className="text-sm text-muted-foreground p-4 text-center">
-        No active projects detected.
+      <div className="text-[13px] text-[#a1a1aa] italic">
+        No active projects
       </div>
     );
   }
@@ -17,36 +15,21 @@ export function ProjectsPanel() {
   return (
     <div className="space-y-4">
       {projects.map((project, idx) => (
-        <div key={idx} className="flex flex-col space-y-2 p-3 bg-secondary/20 rounded-md border">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Activity className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">{project.name}</span>
+        <div key={idx} className="flex items-center justify-between group cursor-pointer">
+          <div className="flex gap-3">
+            <div className="mt-1.5 flex-shrink-0">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#22c55e]" />
             </div>
-            <div className="flex items-center space-x-2">
-              <Badge variant="outline" className="text-xs">
-                <Cpu className="w-3 h-3 mr-1" />
-                {project.cpu_percent}%
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                <HardDrive className="w-3 h-3 mr-1" />
-                {project.ram_mb} MB
-              </Badge>
-              <Button size="sm" variant="destructive" className="h-6 text-xs px-2">Kill All</Button>
-            </div>
-          </div>
-          <div className="space-y-1 mt-2">
-            {project.processes.map(proc => (
-              <div key={proc.pid} className="flex items-center justify-between text-xs text-muted-foreground pl-6">
-                <span>{proc.name} ({proc.pid})</span>
-                <div className="flex items-center space-x-2">
-                  <span>{proc.cpu_percent}% CPU</span>
-                  <span>{proc.ram_mb} MB</span>
-                  <button className="text-destructive hover:underline ml-2">Kill</button>
-                </div>
+            <div>
+              <div className="text-[14px] text-[#e4e4e7] font-medium tracking-wide">
+                {project.name}
               </div>
-            ))}
+              <div className="text-[12px] text-[#71717a] mt-0.5">
+                {project.processes.length} processes &middot; {Math.round(project.ram_mb)} MB &middot; 57m
+              </div>
+            </div>
           </div>
+          <ChevronRight className="w-4 h-4 text-[#71717a] opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
       ))}
     </div>

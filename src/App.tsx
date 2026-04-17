@@ -1,18 +1,16 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useDevDashStore } from "./store/useDevDashStore";
+import { Settings, Search } from "lucide-react";
 import { ProjectsPanel } from "./components/ProjectsPanel";
 import { PortsPanel } from "./components/PortsPanel";
 import { BuildsPanel } from "./components/BuildsPanel";
 import { SessionsPanel } from "./components/SessionsPanel";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Activity, Network, Hammer, Save } from "lucide-react";
 
 function App() {
-  const { setProjects, setPorts, setBuilds } = useDevDashStore();
+  const { setProjects, setPorts, setBuilds, projects } = useDevDashStore();
 
   useEffect(() => {
-    // Listen for backend updates
     const unlistenProjects = listen("projects-updated", (event: any) => {
       setProjects(event.payload);
     });
@@ -30,66 +28,71 @@ function App() {
     };
   }, []);
 
+  const totalRam = projects.reduce((acc, p) => acc + p.ram_mb, 0);
+  const totalProjects = projects.length;
+
   return (
-    <div className="h-screen w-screen bg-background text-foreground flex flex-col overflow-hidden selection:bg-primary/30">
-      <header className="h-12 border-b flex items-center justify-between px-4 drag-region">
-        <h1 className="font-bold text-lg tracking-tight drag-region">DevDash</h1>
-        <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-          <span className="text-xs text-muted-foreground">Monitoring</span>
+    <div className="h-screen w-screen bg-[#111113] text-[#e4e4e7] flex flex-col overflow-hidden font-sans selection:bg-yellow-500/30">
+      {/* Header */}
+      <header className="px-5 pt-5 pb-3 drag-region flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <h1 className="font-semibold text-xl tracking-tight text-white drag-region">DevWatch</h1>
+          <button className="text-[#a1a1aa] hover:text-white transition-colors cursor-pointer">
+            <Settings className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div className="text-sm text-[#a1a1aa] flex items-center gap-1.5">
+          <span>{totalProjects} project(s) running</span>
+          <span>&middot;</span>
+          <span>{Math.round(totalRam)} MB RAM</span>
+        </div>
+
+        <div className="mt-2">
+          <button className="bg-[#27272a]/50 text-[#facc15] border border-[#facc15]/20 hover:bg-[#facc15]/10 px-3 py-1.5 rounded-md text-xs font-medium transition-colors">
+            Stop All Projects
+          </button>
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4">
-        <Accordion>
-          <AccordionItem value="projects">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center">
-                <Activity className="w-4 h-4 mr-2" />
-                <span>Projects</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <ProjectsPanel />
-            </AccordionContent>
-          </AccordionItem>
+      <div className="px-5">
+        <div className="h-px w-full bg-[#27272a]" />
+      </div>
 
-          <AccordionItem value="ports">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center">
-                <Network className="w-4 h-4 mr-2" />
-                <span>Developer Ports</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <PortsPanel />
-            </AccordionContent>
-          </AccordionItem>
+      <main className="flex-1 overflow-y-auto overflow-x-hidden p-5 flex flex-col gap-6 custom-scrollbar">
+        {/* Running Projects Section */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[13px] font-semibold text-[#e4e4e7]">Running Projects</h2>
+            <button className="text-[#a1a1aa] hover:text-white transition-colors">
+              <Search className="w-4 h-4" />
+            </button>
+          </div>
+          <ProjectsPanel />
+        </section>
 
-          <AccordionItem value="builds">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center">
-                <Hammer className="w-4 h-4 mr-2" />
-                <span>Builds & Tasks</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <BuildsPanel />
-            </AccordionContent>
-          </AccordionItem>
+        <div className="h-px w-full bg-[#27272a]" />
 
-          <AccordionItem value="sessions">
-            <AccordionTrigger className="hover:no-underline">
-              <div className="flex items-center">
-                <Save className="w-4 h-4 mr-2" />
-                <span>Sessions</span>
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <SessionsPanel />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+        {/* Open Ports Section */}
+        <section>
+          <h2 className="text-[13px] font-semibold text-[#e4e4e7] mb-3">Open Ports</h2>
+          <PortsPanel />
+        </section>
+
+        <div className="h-px w-full bg-[#27272a]" />
+
+        {/* Sessions Section */}
+        <section>
+          <SessionsPanel />
+        </section>
+
+        <div className="h-px w-full bg-[#27272a]" />
+
+        {/* Build Activity Section */}
+        <section>
+          <BuildsPanel />
+        </section>
+
       </main>
     </div>
   );
